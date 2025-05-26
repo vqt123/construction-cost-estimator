@@ -198,6 +198,18 @@ PORT=5173
 
 ## Troubleshooting
 
+### 🆕 Enhanced Debugging Features
+
+We've added comprehensive logging throughout the application! If the app "goes quiet" or takes a long time:
+
+1. **Use the Health Check button** in the frontend UI
+2. **Check the Status Log** that appears below the form
+3. **Monitor logs in real-time** using our monitoring script:
+   ```bash
+   ./scripts/monitor-logs.sh
+   ```
+4. **Read the detailed debugging guide**: [DEBUGGING.md](./DEBUGGING.md)
+
 ### Docker Issues
 
 ```bash

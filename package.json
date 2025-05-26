@@ -21,7 +21,9 @@
     "docker:logs": "docker compose logs -f",
     "db:reset": "docker compose down -v && docker compose up -d",
     "embeddings": "tsx scripts/generate-embeddings.ts",
-    "start:frontend": "cd apps/frontend && pnpm dev"
+    "start:frontend": "cd apps/frontend && pnpm dev",
+    "monitor": "./scripts/monitor-logs.sh",
+    "health": "curl -s http://localhost:5173/api/health | jq '.' || curl -s http://localhost:5173/api/health"
   },
   "devDependencies": {
     "@types/pg": "^8.10.9",

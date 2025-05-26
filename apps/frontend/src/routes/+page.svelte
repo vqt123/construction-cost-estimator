@@ -4,6 +4,18 @@
 	let loading = false;
 	let result: any = null;
 	let error = '';
+	let statusLog: string[] = [];
+	let currentStep = '';
+
+	function addStatusLog(message: string) {
+		statusLog = [...statusLog, `${new Date().toLocaleTimeString()}: ${message}`];
+		console.log('📱 [FRONTEND]', message);
+	}
+
+	function clearStatusLog() {
+		statusLog = [];
+		currentStep = '';
+	}
 
 	async function submitEstimate() {
 		if (!query.trim()) {
@@ -14,8 +26,13 @@
 		loading = true;
 		error = '';
 		result = null;
+		clearStatusLog();
 
 		try {
+			addStatusLog('🚀 Starting estimation request...');
+			currentStep = 'Sending request to server...';
+
+			const startTime = Date.now();
 			const response = await fetch('/api/estimate', {
 				method: 'POST',
 				headers: {
@@ -27,15 +44,30 @@
 				})
 			});
 
+			const requestTime = Date.now() - startTime;
+			addStatusLog(`📡 Request sent, waiting for response... (${requestTime}ms)`);
+			currentStep = 'Processing your request...';
+
 			const data = await response.json();
+			const totalTime = Date.now() - startTime;
 
 			if (!response.ok) {
+				addStatusLog(`❌ Request failed after ${totalTime}ms`);
 				throw new Error(data.error || 'Failed to get estimate');
 			}
 
+			addStatusLog(`✅ Estimation completed successfully in ${totalTime}ms`);
+			addStatusLog(`💰 Total cost: $${data.estimate.totalCost.toLocaleString()}`);
+			addStatusLog(`📍 Region: ${data.estimate.region}`);
+			addStatusLog(`🏗️ Project type: ${data.estimate.projectType}`);
+			currentStep = 'Complete!';
+
 			result = data;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'An error occurred';
+			const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+			addStatusLog(`❌ Error: ${errorMessage}`);
+			error = errorMessage;
+			currentStep = 'Failed';
 		} finally {
 			loading = false;
 		}
@@ -46,6 +78,30 @@
 			style: 'currency',
 			currency: 'USD'
 		}).format(amount);
+	}
+
+	async function checkSystemHealth() {
+		addStatusLog('🏥 Checking system health...');
+		try {
+			const response = await fetch('/api/health');
+			const health = await response.json();
+
+			addStatusLog(`📊 System status: ${health.status}`);
+			addStatusLog(
+				`🗄️ Database: ${health.services.database.status} (${health.services.database.responseTime}ms)`
+			);
+			addStatusLog(
+				`🤖 Ollama: ${health.services.ollama.status} (${health.services.ollama.responseTime}ms)`
+			);
+
+			if (health.status !== 'healthy') {
+				addStatusLog('⚠️ Some services are not healthy. Check the console for details.');
+			}
+		} catch (err) {
+			addStatusLog(
+				`❌ Health check failed: ${err instanceof Error ? err.message : 'Unknown error'}`
+			);
+		}
 	}
 </script>
 
@@ -92,14 +148,74 @@
 					/>
 				</div>
 
-				<button
-					type="submit"
-					disabled={loading}
-					class="w-full rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{loading ? 'Generating Estimate...' : 'Get Estimate'}
-				</button>
+				<div class="flex gap-4">
+					<button
+						type="submit"
+						disabled={loading}
+						class="flex-1 rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{loading ? 'Generating Estimate...' : 'Get Estimate'}
+					</button>
+					<button
+						type="button"
+						on:click={checkSystemHealth}
+						class="rounded-md bg-gray-600 px-4 py-3 font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+					>
+						Health Check
+					</button>
+				</div>
 			</form>
+
+			{#if loading && currentStep}
+				<div class="mt-6 rounded-md border border-blue-200 bg-blue-50 p-4">
+					<div class="flex items-center">
+						<div class="mr-3">
+							<svg
+								class="h-5 w-5 animate-spin text-blue-600"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						</div>
+						<div>
+							<h3 class="text-sm font-medium text-blue-800">Processing</h3>
+							<div class="mt-1 text-sm text-blue-700">{currentStep}</div>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if statusLog.length > 0}
+				<div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4">
+					<h3 class="mb-3 text-sm font-medium text-gray-800">Status Log</h3>
+					<div class="max-h-40 overflow-y-auto">
+						{#each statusLog as logEntry}
+							<div class="mb-1 font-mono text-xs text-gray-600">{logEntry}</div>
+						{/each}
+					</div>
+					<button
+						type="button"
+						on:click={clearStatusLog}
+						class="mt-2 text-xs text-gray-500 hover:text-gray-700"
+					>
+						Clear Log
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		{#if error}
