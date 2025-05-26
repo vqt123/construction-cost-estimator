@@ -21,6 +21,9 @@
     "docker:logs": "docker compose logs -f",
     "db:reset": "docker compose down -v && docker compose up -d",
     "embeddings": "tsx scripts/generate-embeddings.ts",
+    "homewyse:import": "node scripts/process-homewyse-data.js",
+    "homewyse:embeddings": "node scripts/generate-homewyse-embeddings.js",
+    "homewyse:setup": "npm run homewyse:import && npm run homewyse:embeddings",
     "start:frontend": "cd apps/frontend && pnpm dev",
     "monitor": "./scripts/monitor-logs.sh",
     "health": "curl -s http://localhost:5173/api/health | jq '.' || curl -s http://localhost:5173/api/health"

@@ -1,0 +1,28 @@
+FROM node:18-alpine
+
+# Install git and other necessary tools
+RUN apk add --no-cache git openssh-client
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependencies first (for better caching)
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copy scripts directory
+COPY scripts/ ./scripts/
+
+# Create directories
+RUN mkdir -p /app/data /root/.ssh
+
+# Clone script that handles authentication
+COPY scripts/clone-homewyse.sh ./clone-homewyse.sh
+RUN chmod +x ./clone-homewyse.sh
+
+# Default command
+CMD ["./clone-homewyse.sh"] 

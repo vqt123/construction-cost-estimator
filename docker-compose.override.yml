@@ -1,0 +1,52 @@
+version: '3.8'
+
+# This file provides local development overrides for docker-compose.yaml
+# It includes volume mounts for credentials and local repository access
+
+services:
+  data-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.data-processor
+    container_name: estimation-data-processor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database connection
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/estimation_db
+      
+      # Ollama connection
+      - OLLAMA_BASE_URL=http://ollama:11434
+      
+      # Repository configuration
+      - HOMEWYSE_REPO_URL=${HOMEWYSE_REPO_URL}
+      
+      # GitHub credentials (required environment variables)
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      # Mount SSH keys for private repository access (optional)
+      # Uncomment and adjust path to your SSH keys:
+      # - ~/.ssh:/app/ssh:ro
+      
+      # Mount local repository if you have it cloned locally (optional)
+      # Uncomment and adjust path to your local homewyse-scraper repository:
+      # - /path/to/your/homewyse-scraper:/app/homewyse-scraper:ro
+      
+      # Mount data directory for persistence (optional)
+      - homewyse_data:/app/data
+    networks:
+      - default
+    restart: "no"  # Don't restart automatically - run once
+
+  # Add the data-processor to the existing postgres service dependencies
+  postgres:
+    # Extend the existing postgres service
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+
+volumes:
+  homewyse_data: 

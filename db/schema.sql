@@ -46,7 +46,7 @@ CREATE TABLE cost_docs (
     doc_type VARCHAR(100), -- manual, specification, price_list, etc.
     project_type_id INTEGER REFERENCES project_types(id),
     region_id INTEGER REFERENCES regions(id),
-    embedding vector(1536), -- OpenAI ada-002 dimension, adjust for local model
+    embedding vector(768), -- nomic-embed-text dimension (Ollama)
     metadata JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

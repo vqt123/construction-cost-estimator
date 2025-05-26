@@ -187,14 +187,26 @@ Generate cost estimate from natural language query.
 
 ### Environment Variables
 
-Create `.env` in `apps/frontend/`:
+Create `.env` in the project root for global configuration:
 
 ```env
+# Database Configuration
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/estimation_db
+
+# Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
+
+# GitHub Configuration for Homewyse Integration (recommended)
+GITHUB_USERNAME=your_github_username
+GITHUB_TOKEN=your_github_personal_access_token
+HOMEWYSE_REPO_URL=https://github.com/your_username/homewyse-scraper.git
+
+# Frontend Configuration (create in apps/frontend/)
 NODE_ENV=development
 PORT=5173
 ```
+
+**Security Note**: For GitHub credentials, see [ENVIRONMENT.md](./ENVIRONMENT.md) for detailed setup instructions and security best practices.
 
 ## Troubleshooting
 
@@ -263,8 +275,82 @@ docker exec estimation-ollama ollama pull nomic-embed-text
 
 MIT License - see LICENSE file for details.
 
+## Homewyse Integration
+
+This project integrates with a homewyse-scraper repository to import real-world cost data for enhanced estimation accuracy.
+
+### Quick Setup
+
+```bash
+# Run the interactive setup script
+./scripts/setup-homewyse.sh
+```
+
+### Manual Setup Options
+
+#### Option 1: Public Repository
+
+```bash
+# If the repository is public
+docker compose -f docker-compose.yaml -f docker-compose.override.yml run --rm data-processor
+```
+
+#### Option 2: Private Repository with Token
+
+```bash
+# Set your GitHub credentials
+export GITHUB_USERNAME=your-username
+export GITHUB_TOKEN=your-personal-access-token
+
+# Run the data processor
+docker compose -f docker-compose.yaml -f docker-compose.override.yml run --rm data-processor
+```
+
+#### Option 3: SSH Key Authentication
+
+```bash
+# Ensure SSH keys are at ~/.ssh/id_rsa
+# Update docker-compose.override.yml to mount SSH keys:
+# - ~/.ssh:/app/ssh:ro
+
+docker compose -f docker-compose.yaml -f docker-compose.override.yml run --rm data-processor
+```
+
+#### Option 4: Local Repository
+
+```bash
+# If you have the repository cloned locally
+# Update docker-compose.override.yml to mount your local repo:
+# - /path/to/homewyse-scraper:/app/homewyse-scraper:ro
+
+docker compose -f docker-compose.yaml -f docker-compose.override.yml run --rm data-processor
+```
+
+### NPM Scripts
+
+```bash
+# Import homewyse data
+pnpm homewyse:import
+
+# Generate embeddings for homewyse data
+pnpm homewyse:embeddings
+
+# Complete setup (import + embeddings)
+pnpm homewyse:setup
+```
+
+### Data Structure
+
+The integration expects JSON files in the `homewyse-scraper/actual-processed/level1/` directory. The data is automatically:
+
+- Imported into the `cost_docs` table
+- Categorized by project type (Flooring, Painting, Roofing, etc.)
+- Made searchable through vector embeddings
+- Integrated with the existing RAG system
+
 ## Roadmap
 
+- [x] **Homewyse Data Integration**: Import real-world cost data from homewyse-scraper
 - [ ] Add more construction types (HVAC, electrical, plumbing)
 - [ ] Implement user authentication and project saving
 - [ ] Add PDF document ingestion
