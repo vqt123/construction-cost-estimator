@@ -1,0 +1,13 @@
+coverage
+public
+dist
+build
+pnpm-lock.yaml
+pnpm-workspace.yaml
+node_modules
+*.yml
+*.yaml
+.next
+.nuxt
+.vite
+.svelte-kit 
